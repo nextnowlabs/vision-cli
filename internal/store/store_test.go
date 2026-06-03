@@ -67,29 +67,21 @@ func TestSetConfig_LoadConfig(t *testing.T) {
 
 func TestGetAPIKey_ConfigOnly(t *testing.T) {
 	s := tempStore(t)
-	s.SetConfig("dashscope_api_key", "sk-cfg-scope")
+	s.SetConfig("ark_api_key", "sk-cfg-ark")
 
-	key, ok := s.GetAPIKey("dashscope")
-	if !ok || key != "sk-cfg-scope" {
-		t.Fatalf("GetAPIKey(dashscope) = (%q, %v), want (sk-cfg-scope, true)", key, ok)
+	key, ok := s.GetAPIKey("volcengine_ark")
+	if !ok || key != "sk-cfg-ark" {
+		t.Fatalf("GetAPIKey(volcengine_ark) = (%q, %v), want (sk-cfg-ark, true)", key, ok)
 	}
 }
 
 func TestGetAPIKey_EnvVar(t *testing.T) {
 	s := tempStore(t)
 
-	os.Setenv("DASHSCOPE_API_KEY", "sk-env-scope")
-	defer os.Unsetenv("DASHSCOPE_API_KEY")
-
-	key, ok := s.GetAPIKey("dashscope")
-	if !ok || key != "sk-env-scope" {
-		t.Fatalf("GetAPIKey(dashscope) = (%q, %v), want (sk-env-scope, true)", key, ok)
-	}
-
 	os.Setenv("ARK_API_KEY", "sk-env-ark")
 	defer os.Unsetenv("ARK_API_KEY")
 
-	key, ok = s.GetAPIKey("volcengine_ark")
+	key, ok := s.GetAPIKey("volcengine_ark")
 	if !ok || key != "sk-env-ark" {
 		t.Fatalf("GetAPIKey(volcengine_ark) = (%q, %v), want (sk-env-ark, true)", key, ok)
 	}
@@ -97,25 +89,20 @@ func TestGetAPIKey_EnvVar(t *testing.T) {
 
 func TestGetAPIKey_ConfigOverridesEnv(t *testing.T) {
 	s := tempStore(t)
-	s.SetConfig("dashscope_api_key", "sk-cfg-override")
-	os.Setenv("DASHSCOPE_API_KEY", "sk-env-orig")
-	defer os.Unsetenv("DASHSCOPE_API_KEY")
+	s.SetConfig("ark_api_key", "sk-cfg-override")
+	os.Setenv("ARK_API_KEY", "sk-env-orig")
+	defer os.Unsetenv("ARK_API_KEY")
 
-	key, ok := s.GetAPIKey("dashscope")
+	key, ok := s.GetAPIKey("volcengine_ark")
 	if !ok || key != "sk-cfg-override" {
-		t.Fatalf("GetAPIKey(dashscope) = (%q, %v), want (sk-cfg-override, true)", key, ok)
+		t.Fatalf("GetAPIKey(volcengine_ark) = (%q, %v), want (sk-cfg-override, true)", key, ok)
 	}
 }
 
 func TestGetAPIKey_Missing(t *testing.T) {
 	s := tempStore(t)
 
-	_, ok := s.GetAPIKey("dashscope")
-	if ok {
-		t.Fatal("expected false for missing key")
-	}
-
-	_, ok = s.GetAPIKey("unknown")
+	_, ok := s.GetAPIKey("unknown")
 	if ok {
 		t.Fatal("expected false for unknown backend")
 	}
@@ -129,7 +116,7 @@ func TestAddRecord_GetRecords(t *testing.T) {
 		Mode:    "direct",
 		Status:  "success",
 		Model:   "flux",
-		Backend: "dashscope",
+		Backend: "volcengine_ark",
 	}
 	id, err := s.AddRecord(r)
 	if err != nil {

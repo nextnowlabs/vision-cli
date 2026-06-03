@@ -156,9 +156,6 @@ func (s *Store) GetAPIKey(backend string) (string, bool) {
 
 	var configKey, envVar string
 	switch backend {
-	case "dashscope":
-		configKey = "dashscope_api_key"
-		envVar = "DASHSCOPE_API_KEY"
 	case "volcengine_ark":
 		configKey = "ark_api_key"
 		envVar = "ARK_API_KEY"

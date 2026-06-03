@@ -1,6 +1,6 @@
 # vision-cli
 
-**`vg`** — 多后端图像、视频与语音合成命令行工具，对接阿里云 DashScope 和火山方舟（Ark / TTS），单二进制、零运行时依赖。
+**`vg`** — 多后端图像、视频与语音合成命令行工具，对接火山方舟（Ark / TTS），单二进制、零运行时依赖。
 
 ```bash
 vg gen -p "一只在霓虹晚霞中冲浪的微型宇航员" --ar 16:9 --res 2K --model seedream
@@ -10,7 +10,7 @@ vg gen -p "一只在霓虹晚霞中冲浪的微型宇航员" --ar 16:9 --res 2K 
 
 各家云厂商的图像/视频生成 API 请求格式、轮询协议各不相同。`vg` 统一了这些差异：
 
-- **一条 `vg gen`** 覆盖 5 个图像模型，根据需要选择速度、价格或文本渲染能力。
+- **一条 `vg gen`** 覆盖 3 个图像模型，根据需要选择速度、价格或文本渲染能力。
 - **一条 `vg video gen`** 搞定 Seedance 2.0 的提交、轮询、下载全流程。
 - **一条 `vg tts gen`** 完成文本到语音的合成，支持多种音色、语速、编码格式。
 - **一份历史记录** 追踪所有后端的 prompt、模型和输出。
@@ -47,10 +47,6 @@ go install github.com/nextnowlabs/vision-cli/cmd/vg@latest
 | Windows | `%APPDATA%\vision-cli\` |
 
 ```bash
-# DashScope 阿里云 (https://dashscope.console.aliyun.com)
-vg config set dashscope_api_key <key>
-# 或 export DASHSCOPE_API_KEY=<key>
-
 # Volcengine Ark 火山方舟 (https://console.volcengine.com/ark)
 vg config set ark_api_key <key>
 # 或 export ARK_API_KEY=<key>
@@ -88,8 +84,6 @@ vg config set tts_resource_id seed-tts-2.0   # 模型版本（默认 seed-tts-2.
 | `seedream`（默认） | 火山方舟 Ark | `doubao-seedream-4-5-251128` | 支持 4K，最多 14 张参考图，文本渲染最强 |
 | `seedream-lite` | 火山方舟 Ark | `doubao-seedream-5.0-lite` | 最新 5.0，更快更便宜 |
 | `seedream-legacy` | 火山方舟 Ark | `doubao-seedream-4-0-250828` | 4.0 回退版本 |
-| `wan-pro` | DashScope 阿里云 | `wan2.7-image-pro` | 文生图支持 4K，最多 9 张参考图 |
-| `wan` | DashScope 阿里云 | `wan2.7-image` | 最高 2K，速度更快 |
 
 ### 视频 — `vg video gen --model <别名>`
 
@@ -112,10 +106,7 @@ vg gen -p "把这张图变成日落时分" -i photo.jpg --ar 16:9 --res 2K -o su
 # Seedream 4.5 — 适合带中文排版的海报
 vg gen -p "促销海报，标题 春日上新，柔和粉彩" --model seedream --ar 3:4 --res 4K
 
-# Wan 万相
-vg gen -p "宁静的山水风景" --model wan-pro --ar 16:9 --res 4K
-
-# 多参考图融合（Seedream 最多 14 张）
+# 多参考图融合（最多 14 张）
 vg gen -p "服装来自图1，姿势来自图2" -i a.png -i b.png --model seedream
 
 # 并发生成 4 张变体
@@ -123,7 +114,7 @@ vg gen -p "一间安静的书房" --repeat 4 -o studies.png
 # 输出：studies_1.png, studies_2.png, studies_3.png, studies_4.png
 
 # 从文件读取 prompt
-vg gen -p @prompt.txt --model wan-pro --res 4K
+vg gen -p @prompt.txt --model seedream --res 4K
 ```
 
 ### 视频生成（Seedance 2.0）
@@ -255,9 +246,9 @@ vg config set poll_interval 20              # 视频轮询间隔（秒）
 
 ## 后端特性速览
 
-- **参考图数量限制**：DashScope 最多 9 张，火山方舟最多 14 张
-- **4K 分辨率**：seedream 全系支持，wan-pro 仅文生图支持；wan 4K 降级为 2K
-- **负面提示词**：DashScope 原生支持，Seedream 追加到 prompt 末尾
+- **参考图数量限制**：火山方舟最多 14 张
+- **4K 分辨率**：seedream 全系支持
+- **负面提示词**：Seedream 追加到 prompt 末尾
 - **火山方舟 Ark**：仅配 API 密钥不够 — 必须先在控制台开通对应模型服务
 
 ## 开发

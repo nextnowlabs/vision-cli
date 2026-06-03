@@ -20,8 +20,6 @@ type modelEntry struct {
 }
 
 var ImageModels = map[string]modelEntry{
-	"wan-pro":         {"dashscope", "wan2.7-image-pro"},
-	"wan":             {"dashscope", "wan2.7-image"},
 	"seedream":        {"volcengine_ark", "doubao-seedream-4-5-251128"},
 	"seedream-lite":   {"volcengine_ark", "doubao-seedream-5.0-lite"},
 	"seedream-legacy": {"volcengine_ark", "doubao-seedream-4-0-250828"},

@@ -10,7 +10,6 @@ import (
 )
 
 var validConfigKeys = map[string]bool{
-	"dashscope_api_key":       true,
 	"ark_api_key":             true,
 	"ark_endpoint_id":         true,
 	"tts_appid":               true,
@@ -24,7 +23,6 @@ var validConfigKeys = map[string]bool{
 }
 
 var secretConfigKeys = map[string]bool{
-	"dashscope_api_key":      true,
 	"ark_api_key":            true,
 	"tts_api_key":            true,
 }

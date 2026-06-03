@@ -8,7 +8,6 @@ import (
 )
 
 var apiKeyHints = map[string]string{
-	"dashscope":     "No DashScope API key. Set via: vg config set dashscope_api_key <key>\nOr export DASHSCOPE_API_KEY=<key>",
 	"volcengine_ark": "No Volcengine Ark API key. Set via: vg config set ark_api_key <key>\nOr export ARK_API_KEY=<key>\nNote: 还需在火山方舟控制台「开通管理」中开通对应服务",
 	"tts":           "TTS requires api_key. Set via:\n  vg config set tts_api_key <key>\n  vg config set tts_resource_id <id>  (default: seed-tts-2.0)\nOr export TTS_API_KEY=<key>",
 }
@@ -38,8 +37,6 @@ type ImageGenerator interface {
 
 func newImageClient(backend, apiKey string, cfg map[string]any) ImageGenerator {
 	switch backend {
-	case "dashscope":
-		return client.NewDashScopeClient(apiKey)
 	case "volcengine_ark":
 		endpointID := getCfgStr(cfg, "ark_endpoint_id", "")
 		return client.NewVolcengineArkClient(apiKey, endpointID)

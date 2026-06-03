@@ -12,8 +12,6 @@ func TestBackendOf(t *testing.T) {
 		alias string
 		want  string
 	}{
-		{"wan-pro", "dashscope"},
-		{"wan", "dashscope"},
 		{"seedream", "volcengine_ark"},
 		{"seedream-lite", "volcengine_ark"},
 		{"seedream-legacy", "volcengine_ark"},
@@ -33,8 +31,6 @@ func TestModelIDOf(t *testing.T) {
 		alias string
 		want  string
 	}{
-		{"wan-pro", "wan2.7-image-pro"},
-		{"wan", "wan2.7-image"},
 		{"seedream", "doubao-seedream-4-5-251128"},
 		{"seedream-lite", "doubao-seedream-5.0-lite"},
 		{"seedream-legacy", "doubao-seedream-4-0-250828"},
