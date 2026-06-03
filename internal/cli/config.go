@@ -14,10 +14,8 @@ var validConfigKeys = map[string]bool{
 	"ark_api_key":             true,
 	"ark_endpoint_id":         true,
 	"tts_appid":               true,
-	"tts_cluster":             true,
-	"tts_token":               true,
-	"tts_access_key":          true,
-	"tts_secret_key":          true,
+	"tts_api_key":             true,
+	"tts_resource_id":         true,
 	"default_ar":              true,
 	"default_res":             true,
 	"default_model":           true,
@@ -28,8 +26,7 @@ var validConfigKeys = map[string]bool{
 var secretConfigKeys = map[string]bool{
 	"dashscope_api_key":      true,
 	"ark_api_key":            true,
-	"tts_token":              true,
-	"tts_secret_key":         true,
+	"tts_api_key":            true,
 }
 
 var configCmd = &cobra.Command{

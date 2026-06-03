@@ -1,40 +1,45 @@
 package client
 
 import (
+	"bufio"
+	"bytes"
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
+	"io"
+	"math"
 	"net/http"
+	"strings"
 	"time"
 )
 
-const ttsBaseURL = "https://openspeech.bytedance.com/api/v1/tts"
+const ttsBaseURL = "https://openspeech.bytedance.com/api/v3/tts/unidirectional/sse"
 
 type TTSOptions struct {
-	VoiceType   string
-	Encoding    string
-	Rate        int
-	SpeedRatio  float64
-	VolumeRatio float64
-	PitchRatio  float64
-	Language    string
-	Emotion     string
+	VoiceType    string
+	Encoding     string
+	Rate         int
+	SpeedRatio   float64
+	VolumeRatio  float64
+	Language     string
+	Emotion      string
+	EmotionScale float64
+	Pitch        int
 }
 
 type TTSClient struct {
-	appID   string
-	token   string
-	cluster string
-	http    *http.Client
+	apiKey     string
+	resourceID string
+	http       *http.Client
 }
 
-func NewTTSClient(appID, token, cluster string) *TTSClient {
+func NewTTSClient(apiKey, resourceID string) *TTSClient {
 	return &TTSClient{
-		appID:   appID,
-		token:   token,
-		cluster: cluster,
-		http:    &http.Client{Timeout: 60 * time.Second},
+		apiKey:     apiKey,
+		resourceID: resourceID,
+		http:       &http.Client{Timeout: 60 * time.Second},
 	}
 }
 
@@ -51,154 +56,129 @@ func (c *TTSClient) Synthesize(text string, opts TTSOptions) ([]byte, string, er
 	if opts.VolumeRatio == 0 {
 		opts.VolumeRatio = 1.0
 	}
-	if opts.PitchRatio == 0 {
-		opts.PitchRatio = 1.0
-	}
 
-	audio := map[string]any{
-		"voice_type":   opts.VoiceType,
-		"encoding":     opts.Encoding,
-		"rate":         opts.Rate,
-		"speed_ratio":  opts.SpeedRatio,
-		"volume_ratio": opts.VolumeRatio,
-		"pitch_ratio":  opts.PitchRatio,
-	}
-	if opts.Language != "" {
-		audio["language"] = opts.Language
+	audioParams := map[string]any{
+		"format":      opts.Encoding,
+		"sample_rate": opts.Rate,
+		"speech_rate": speedRatioToRate(opts.SpeedRatio),
+		"loudness_rate": speedRatioToRate(opts.VolumeRatio),
 	}
 	if opts.Emotion != "" {
-		audio["emotion"] = opts.Emotion
+		audioParams["emotion"] = opts.Emotion
+	}
+	if opts.EmotionScale > 0 {
+		audioParams["emotion_scale"] = opts.EmotionScale
+	}
+
+	additions := map[string]any{}
+	if opts.Language != "" {
+		additions["explicit_language"] = opts.Language
+	}
+	if opts.Pitch != 0 {
+		additions["post_process"] = map[string]any{"pitch": opts.Pitch}
+	}
+
+	reqParams := map[string]any{
+		"text":         text,
+		"speaker":      opts.VoiceType,
+		"audio_params": audioParams,
+	}
+	if len(additions) > 0 {
+		a, _ := json.Marshal(additions)
+		reqParams["additions"] = string(a)
 	}
 
 	body := map[string]any{
-		"app": map[string]any{
-			"appid":   c.appID,
-			"token":   c.token,
-			"cluster": c.cluster,
-		},
 		"user": map[string]any{
 			"uid": "vg-cli",
 		},
-		"audio": audio,
-		"request": map[string]any{
-			"reqid":    reqID(),
-			"text":     text,
-			"text_type": "plain",
-			"operation": "query",
-		},
+		"namespace":    "BidirectionalTTS",
+		"req_params":   reqParams,
 	}
 
-	payload, err := httpPostJSON(c.http, ttsBaseURL, body, map[string]string{
-		"Authorization": "Bearer;" + c.token,
-	})
+	jsonBody, err := json.Marshal(body)
 	if err != nil {
 		return nil, "", err
 	}
 
-	code, _ := payload["code"].(float64)
-	if code != 3000 {
-		msg, _ := payload["message"].(string)
-		return nil, "", fmt.Errorf("TTS error %v: %s", code, msg)
-	}
-
-	b64, _ := payload["data"].(string)
-	if b64 == "" {
-		return nil, "", fmt.Errorf("no audio data in TTS response")
-	}
-
-	audioData, err := base64.StdEncoding.DecodeString(b64)
+	req, err := http.NewRequest("POST", ttsBaseURL, bytes.NewReader(jsonBody))
 	if err != nil {
-		return nil, "", fmt.Errorf("decode audio: %w", err)
+		return nil, "", err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Api-Key", c.apiKey)
+	req.Header.Set("X-Api-Resource-Id", c.resourceID)
+	req.Header.Set("X-Api-Request-Id", reqID())
+
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return nil, "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode > 299 {
+		respBody, _ := io.ReadAll(resp.Body)
+		return nil, "", fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(respBody))
 	}
 
-	duration := ""
-	if addition, ok := payload["addition"].(map[string]any); ok {
-		if d, ok := addition["duration"].(string); ok {
-			duration = d
+	var audioChunks []byte
+	var duration string
+	var lastErr error
+
+	scanner := bufio.NewScanner(resp.Body)
+	scanner.Buffer(make([]byte, 1024*1024), 1024*1024)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if line == "" || strings.HasPrefix(line, "event:") {
+			continue
+		}
+		data, ok := strings.CutPrefix(line, "data:")
+		if !ok {
+			continue
+		}
+
+		var event map[string]any
+		if err := json.Unmarshal([]byte(data), &event); err != nil {
+			continue
+		}
+
+		code, _ := event["code"].(float64)
+		if code != 0 && code != 20000000 {
+			msg, _ := event["message"].(string)
+			lastErr = fmt.Errorf("TTS error %v: %s", code, msg)
+			continue
+		}
+
+		if b64, ok := event["data"].(string); ok && b64 != "" {
+			chunk, err := base64.StdEncoding.DecodeString(b64)
+			if err != nil {
+				lastErr = fmt.Errorf("decode audio chunk: %w", err)
+				continue
+			}
+			audioChunks = append(audioChunks, chunk...)
 		}
 	}
+	if err := scanner.Err(); err != nil {
+		return nil, "", fmt.Errorf("read SSE stream: %w", err)
+	}
 
-	return audioData, duration, nil
+	if lastErr != nil {
+		return nil, "", lastErr
+	}
+
+	if len(audioChunks) == 0 {
+		return nil, "", fmt.Errorf("no audio data received from TTS")
+	}
+
+	return audioChunks, duration, nil
+}
+
+func speedRatioToRate(ratio float64) int {
+	return int(math.Round((ratio - 1.0) * 100))
 }
 
 func reqID() string {
 	b := make([]byte, 16)
 	rand.Read(b)
 	return hex.EncodeToString(b)
-}
-
-type VoiceInfo struct {
-	SpeakerID string `json:"speaker_id"`
-	Name      string `json:"name"`
-	Language  string `json:"language"`
-	Gender    string `json:"gender"`
-}
-
-type VoiceListClient struct {
-	ak     string
-	sk     string
-	appID  string
-	http   *http.Client
-}
-
-func NewVoiceListClient(ak, sk, appID string) *VoiceListClient {
-	return &VoiceListClient{
-		ak:    ak,
-		sk:    sk,
-		appID: appID,
-		http:  &http.Client{Timeout: 30 * time.Second},
-	}
-}
-
-const volcAPIBase = "https://open.volcengineapi.com"
-
-func (c *VoiceListClient) ListSpeakers() ([]VoiceInfo, error) {
-	query := map[string]string{
-		"Action":  "ListBigModelTTSTimbres",
-		"Version": "2023-11-07",
-	}
-
-	body := map[string]any{
-		"AppId": c.appID,
-	}
-
-	payload, err := httpPostJSONVolc(c.http, volcAPIBase, "ListBigModelTTSTimbres", "2023-11-07",
-		"cn-north-1", "speech_saas_prod", query, body, c.ak, c.sk)
-	if err != nil {
-		return nil, fmt.Errorf("list speakers: %w", err)
-	}
-
-	result, ok := payload["Result"].(map[string]any)
-	if !ok {
-		return nil, fmt.Errorf("unexpected response: no Result field")
-	}
-
-	speakers, ok := result["Speakers"].([]any)
-	if !ok {
-		return nil, fmt.Errorf("unexpected response: Speakers field missing or not array")
-	}
-
-	var voices []VoiceInfo
-	for _, s := range speakers {
-		item, ok := s.(map[string]any)
-		if !ok {
-			continue
-		}
-		v := VoiceInfo{}
-		if sid, ok := item["SpeakerId"].(string); ok {
-			v.SpeakerID = sid
-		}
-		if name, ok := item["Speaker"].(string); ok {
-			v.Name = name
-		}
-		if lang, ok := item["Language"].(string); ok {
-			v.Language = lang
-		}
-		if gender, ok := item["Gender"].(string); ok {
-			v.Gender = gender
-		}
-		voices = append(voices, v)
-	}
-
-	return voices, nil
 }

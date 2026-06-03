@@ -13,7 +13,6 @@ vg gen -p "一只在霓虹晚霞中冲浪的微型宇航员" --ar 16:9 --res 2K 
 - **一条 `vg gen`** 覆盖 5 个图像模型，根据需要选择速度、价格或文本渲染能力。
 - **一条 `vg video gen`** 搞定 Seedance 2.0 的提交、轮询、下载全流程。
 - **一条 `vg tts gen`** 完成文本到语音的合成，支持多种音色、语速、编码格式。
-- **一条 `vg tts voices`** 获取所有可用音色列表。
 - **一份历史记录** 追踪所有后端的 prompt、模型和输出。
 - **单 Go 二进制分发**，`go build` 即可，零运行时依赖。
 
@@ -69,21 +68,16 @@ vg config set ark_api_key <key>
 
 ### 语音合成 TTS
 
-TTS 功能使用火山引擎豆包语音，需要两组配置：
+TTS 功能使用火山引擎豆包语音大模型 V3 接口：
 
 ```bash
 # 语音合成（必需）
-vg config set tts_appid <appid>
-vg config set tts_cluster <cluster>        # 如 volcano_tts
-vg config set tts_token <token>
-# 或 export TTS_TOKEN=<token>
-
-# 音色列表查询（可选，需火山引擎 AK/SK）
-vg config set tts_access_key <access_key>
-vg config set tts_secret_key <secret_key>
+vg config set tts_api_key <api-key>          # 新版控制台的 API Key
+vg config set tts_resource_id seed-tts-2.0   # 模型版本（默认 seed-tts-2.0）
+# 或 export TTS_API_KEY=<api-key>
 ```
 
-在 [火山引擎语音控制台](https://console.volcengine.com/tts) 获取上述参数。
+在 [火山引擎语音控制台](https://console.volcengine.com/speech/new) → API Key 管理 获取 API Key，在 [资源管理](https://console.volcengine.com/speech/new) 开通语音合成资源包。
 
 ## 模型
 
@@ -155,27 +149,73 @@ vg video download <task_id> -o final.mp4
 
 ⚠️ 生成的视频在完成后 24 小时内有效。使用 `--poll`（默认行为）会在完成时自动下载；使用 `--poll=false` 需在有效期内执行 `vg video download` 下载。
 
-### 语音合成（Volcengine TTS）
+### 语音合成（Volcengine TTS V3）
 
 ```bash
 # 基本合成
 vg tts gen -p "你好，欢迎使用语音合成功能"
 
 # 指定音色和编码
-vg tts gen -p "春眠不觉晓，处处闻啼鸟" --voice-type BV700_streaming --encoding mp3
+vg tts gen -p "春眠不觉晓，处处闻啼鸟" --voice-type zh_female_shuangkuaisisi_uranus_bigtts --encoding mp3
 
 # 调整语速和音量
 vg tts gen -p "这是一段快速播报的内容" --speed 1.5 --volume 1.2
 
+# 情感和情绪强度
+vg tts gen -p "今天真是太开心了" --emotion happy --emotion-scale 4
+
+# 音高调整（半音，-12 到 12）
+vg tts gen -p "低沉的声音" --pitch -3
+
 # 指定输出文件
 vg tts gen -p "静夜思" -o poem.mp3
-
-# 查看可用音色列表（需 AK/SK 配置）
-vg tts voices
 ```
 
-支持的编码格式：`mp3`（默认）、`wav`、`pcm`、`ogg_opus`。
-语速范围 0.2-3.0，音量和音高范围 0.1-3.0。
+支持的编码格式：`mp3`（默认）、`pcm`、`ogg_opus`。
+语速/音量范围 0.1-3.0，对应 V3 内部的 -50 至 100 标度。
+
+#### 内置音色参考
+
+`--voice-type` 需使用 `_uranus_bigtts` 后缀的 2.0 音色：
+
+| 音色 | voice_type |
+|---|---|
+| Vivi 2.0 | `zh_female_vv_uranus_bigtts` |
+| 小何 2.0 | `zh_female_xiaohe_uranus_bigtts` |
+| 云舟 2.0 | `zh_male_m191_uranus_bigtts` |
+| 小天 2.0 | `zh_male_taocheng_uranus_bigtts` |
+| 刘飞 2.0 | `zh_male_liufei_uranus_bigtts` |
+| 爽快思思 2.0 | `zh_female_shuangkuaisisi_uranus_bigtts` |
+| 魅力苏菲 2.0 | `zh_female_sophie_uranus_bigtts` |
+| 清新女声 2.0 | `zh_female_qingxinnvsheng_uranus_bigtts` |
+| 甜美小源 2.0 | `zh_female_tianmeixiaoyuan_uranus_bigtts` |
+| 甜美桃子 2.0 | `zh_female_tianmeitaozi_uranus_bigtts` |
+| 邻家女孩 2.0 | `zh_female_linjianvhai_uranus_bigtts` |
+| 温暖阿虎 2.0 | `zh_male_wennuanahu_uranus_bigtts` |
+| 少年梓辛 2.0 | `zh_male_shaonianzixin_uranus_bigtts` |
+| 猴哥 2.0 | `zh_male_sunwukong_uranus_bigtts` |
+| 四郎 2.0 | `zh_male_silang_uranus_bigtts` |
+| 儒雅青年 2.0 | `zh_male_ruyaqingnian_uranus_bigtts` |
+| 擎苍 2.0 | `zh_male_qingcang_uranus_bigtts` |
+| 佩奇猪 2.0 | `zh_female_peiqi_uranus_bigtts` |
+| 熊二 2.0 | `zh_male_xionger_uranus_bigtts` |
+| 樱桃丸子 2.0 | `zh_female_yingtaowanzi_uranus_bigtts` |
+| 奶气萌娃 2.0 | `zh_male_naiqimengwa_uranus_bigtts` |
+| 婆婆 2.0 | `zh_female_popo_uranus_bigtts` |
+| 林潇 2.0 | `zh_female_linxiao_uranus_bigtts` |
+| 霸道总裁 2.0 | `zh_male_aojiaobazong_uranus_bigtts` |
+| 高冷御姐 2.0 | `zh_female_gaolengyujie_uranus_bigtts` |
+| 暖阳女声 2.0 | `zh_female_kefunvsheng_uranus_bigtts` |
+| 鸡汤女 2.0 | `zh_female_jitangnv_uranus_bigtts` |
+| 悬疑解说 2.0 | `zh_male_xuanyijieshuo_uranus_bigtts` |
+| 霸气青叔 2.0 | `zh_male_baqiqingshu_uranus_bigtts` |
+| 磁性解说男声 2.0 | `zh_male_cixingjieshuonan_uranus_bigtts` |
+| Tim (美式英语) | `en_male_tim_uranus_bigtts` |
+| Dacey (美式英语) | `en_female_dacey_uranus_bigtts` |
+| Stokie (美式英语) | `en_female_stokie_uranus_bigtts` |
+| Tina老师 2.0 (中英) | `zh_female_yingyujiaoxue_uranus_bigtts` |
+
+完整列表见 https://www.volcengine.com/docs/6561/1257544
 
 ### 历史记录与统计
 
@@ -196,7 +236,6 @@ vg stats                      # 总量、成功/失败、按月/按天统计
 | `vg video status <id>` | 查询 Seedance 任务状态 |
 | `vg video download <id>` | 下载已完成的 Seedance 视频 |
 | `vg tts gen` | 文本转语音合成 |
-| `vg tts voices` | 获取可用音色列表 |
 | `vg history` | 浏览历史生成记录 |
 | `vg config show` | 查看当前配置 |
 | `vg config set <key> <value>` | 设置配置项 |
