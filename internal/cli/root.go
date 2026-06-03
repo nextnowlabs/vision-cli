@@ -14,7 +14,7 @@ var (
 
 var rootCmd = &cobra.Command{
 	Use:     "vg",
-	Short:   "Multi-backend image & video generation CLI",
+	Short:   "Multi-backend image, video & TTS generation CLI",
 	Version: Version,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		s, err := store.DefaultStore()
@@ -36,6 +36,7 @@ func init() {
 	rootCmd.AddCommand(configCmd)
 	rootCmd.AddCommand(genCmd)
 	rootCmd.AddCommand(videoCmd)
+	rootCmd.AddCommand(ttsCmd)
 	rootCmd.AddCommand(historyCmd)
 	rootCmd.AddCommand(statsCmd)
 }

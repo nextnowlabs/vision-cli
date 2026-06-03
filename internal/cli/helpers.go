@@ -10,6 +10,7 @@ import (
 var apiKeyHints = map[string]string{
 	"dashscope":     "No DashScope API key. Set via: vg config set dashscope_api_key <key>\nOr export DASHSCOPE_API_KEY=<key>",
 	"volcengine_ark": "No Volcengine Ark API key. Set via: vg config set ark_api_key <key>\nOr export ARK_API_KEY=<key>\nNote: 还需在火山方舟控制台「开通管理」中开通对应服务",
+	"tts":           "TTS requires app_id, cluster, and token. Set via:\n  vg config set tts_appid <id>\n  vg config set tts_cluster <cluster>\n  vg config set tts_token <token>\nOr export TTS_TOKEN=<token>",
 }
 
 func resolvePrompt(prompt string) string {

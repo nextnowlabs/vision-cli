@@ -1,6 +1,6 @@
 # vision-cli
 
-**`vg`** — 多后端图像与视频生成命令行工具，对接阿里云 DashScope 和火山方舟 Ark，单二进制、零运行时依赖。
+**`vg`** — 多后端图像、视频与语音合成命令行工具，对接阿里云 DashScope 和火山方舟（Ark / TTS），单二进制、零运行时依赖。
 
 ```bash
 vg gen -p "一只在霓虹晚霞中冲浪的微型宇航员" --ar 16:9 --res 2K --model seedream
@@ -12,6 +12,8 @@ vg gen -p "一只在霓虹晚霞中冲浪的微型宇航员" --ar 16:9 --res 2K 
 
 - **一条 `vg gen`** 覆盖 5 个图像模型，根据需要选择速度、价格或文本渲染能力。
 - **一条 `vg video gen`** 搞定 Seedance 2.0 的提交、轮询、下载全流程。
+- **一条 `vg tts gen`** 完成文本到语音的合成，支持多种音色、语速、编码格式。
+- **一条 `vg tts voices`** 获取所有可用音色列表。
 - **一份历史记录** 追踪所有后端的 prompt、模型和输出。
 - **单 Go 二进制分发**，`go build` 即可，零运行时依赖。
 
@@ -64,6 +66,24 @@ vg config set ark_api_key <key>
 3. **生成 API 密钥**：API Key 管理 → 创建
 
 如果跳过步骤 1，首次调用会报 `InvalidEndpointOrModel.NotFound`。
+
+### 语音合成 TTS
+
+TTS 功能使用火山引擎豆包语音，需要两组配置：
+
+```bash
+# 语音合成（必需）
+vg config set tts_appid <appid>
+vg config set tts_cluster <cluster>        # 如 volcano_tts
+vg config set tts_token <token>
+# 或 export TTS_TOKEN=<token>
+
+# 音色列表查询（可选，需火山引擎 AK/SK）
+vg config set tts_access_key <access_key>
+vg config set tts_secret_key <secret_key>
+```
+
+在 [火山引擎语音控制台](https://console.volcengine.com/tts) 获取上述参数。
 
 ## 模型
 
@@ -135,6 +155,28 @@ vg video download <task_id> -o final.mp4
 
 ⚠️ 生成的视频在完成后 24 小时内有效。使用 `--poll`（默认行为）会在完成时自动下载；使用 `--poll=false` 需在有效期内执行 `vg video download` 下载。
 
+### 语音合成（Volcengine TTS）
+
+```bash
+# 基本合成
+vg tts gen -p "你好，欢迎使用语音合成功能"
+
+# 指定音色和编码
+vg tts gen -p "春眠不觉晓，处处闻啼鸟" --voice-type BV700_streaming --encoding mp3
+
+# 调整语速和音量
+vg tts gen -p "这是一段快速播报的内容" --speed 1.5 --volume 1.2
+
+# 指定输出文件
+vg tts gen -p "静夜思" -o poem.mp3
+
+# 查看可用音色列表（需 AK/SK 配置）
+vg tts voices
+```
+
+支持的编码格式：`mp3`（默认）、`wav`、`pcm`、`ogg_opus`。
+语速范围 0.2-3.0，音量和音高范围 0.1-3.0。
+
 ### 历史记录与统计
 
 ```bash
@@ -153,6 +195,8 @@ vg stats                      # 总量、成功/失败、按月/按天统计
 | `vg video gen` | 提交视频生成任务（提交 + 轮询 + 下载） |
 | `vg video status <id>` | 查询 Seedance 任务状态 |
 | `vg video download <id>` | 下载已完成的 Seedance 视频 |
+| `vg tts gen` | 文本转语音合成 |
+| `vg tts voices` | 获取可用音色列表 |
 | `vg history` | 浏览历史生成记录 |
 | `vg config show` | 查看当前配置 |
 | `vg config set <key> <value>` | 设置配置项 |
