@@ -1,0 +1,26 @@
+# Build output
+bin/
+*.exe
+*.test
+*.out
+
+# Editor / IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Generated outputs
+vg_*.png
+vg_*.mp4
+out/
+output/
+
+# Local user state
+.env
+.env.local
+
+# Project-specific
+test_dog.png
+test_output.png
