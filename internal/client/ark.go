@@ -13,9 +13,9 @@ const arkBaseURL = "https://ark.cn-beijing.volces.com/api/v3"
 const arkGenPath = "/images/generations"
 
 var arkResCaps = map[string]map[string]int{
-	"doubao-seedream-4-0-250828": {"1K": 1024, "2K": 2048, "4K": 4096},
-	"doubao-seedream-4-5-251128": {"1K": 1024, "2K": 2048, "4K": 4096},
-	"doubao-seedream-5.0-lite":   {"1K": 1024, "2K": 2048, "4K": 4096},
+	"doubao-seedream-4-0-250828": {"2K": 2048, "4K": 4096},
+	"doubao-seedream-4-5-251128": {"2K": 2048, "4K": 4096},
+	"doubao-seedream-5.0-lite":   {"2K": 2048, "4K": 4096},
 }
 
 const arkMaxRefs = 14

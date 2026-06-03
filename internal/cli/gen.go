@@ -56,7 +56,7 @@ func runGen(cmd *cobra.Command, args []string) error {
 	}
 	resolution := genResolution
 	if resolution == "" {
-		resolution = getCfgStr(cfg, "default_res", "1K")
+		resolution = getCfgStr(cfg, "default_res", "2K")
 	}
 	outputDir := getCfgStr(cfg, "output_dir", ".")
 
